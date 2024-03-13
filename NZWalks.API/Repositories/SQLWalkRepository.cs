@@ -39,9 +39,40 @@ namespace NZWalks.API.Repositories
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public async Task<List<Walk>> GetWalksAsync()
+        public async Task<List<Walk>> GetWalksAsync(string? filterOn = null, string? filterQuery = null, 
+            string? sortBy = null, bool isAscending = true, int PageNumber = 1, int PageSize = 1000)
         {
-            return await dbContext.Walks.Include("Difficulty").Include("Region").ToListAsync();
+            var walks= dbContext.Walks.Include("Difficulty").Include("Region").AsQueryable();
+
+            //Filtering
+            if (string.IsNullOrWhiteSpace(filterOn) == false && string.IsNullOrWhiteSpace(filterQuery) == false)
+            {
+                if (filterOn.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = walks.Where(x => x.Name.Contains(filterQuery));
+                }
+            }
+
+            //Sorting
+            if (string.IsNullOrWhiteSpace(sortBy) == false)
+            {
+                if(sortBy.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = isAscending ? walks.OrderBy(x => x.Name) : walks.OrderByDescending(x => x.Name);
+                }
+                else if (sortBy.Equals("Length", StringComparison.OrdinalIgnoreCase))
+                {
+                    walks = isAscending ? walks.OrderBy(x => x.LengthInKm) : walks.OrderByDescending(x => x.LengthInKm);
+                }
+            }
+
+            //Pagination
+            //So let's say if the page number is one, that means this becomes zero and anything multiplied with a zero is a zero.
+            var skipResults = (PageNumber - 1) * PageSize;
+
+            //skip some and take the page size in case of the first page.
+            return await walks.Skip(skipResults).Take(PageSize).ToListAsync();
+            //return await dbContext.Walks.Include("Difficulty").Include("Region").ToListAsync();
         }
 
         public async Task<Walk?> UpdateWalkByIdAsync(Guid id, Walk walk)
