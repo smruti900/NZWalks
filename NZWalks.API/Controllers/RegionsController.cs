@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Data;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTO;
 using NZWalks.API.Repositories;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace NZWalks.API.Controllers
@@ -20,38 +22,57 @@ namespace NZWalks.API.Controllers
         private readonly NZWalksDBContext dbContext;
         private readonly IRegionRepository regionRepository;
         private readonly IMapper mapper;
+        private readonly ILogger<RegionsController> logger;
 
-        public RegionsController(NZWalksDBContext dbContext,IRegionRepository regionRepository,IMapper mapper)
+        public RegionsController(NZWalksDBContext dbContext,IRegionRepository regionRepository,IMapper mapper,ILogger<RegionsController> logger)
         {
             this.dbContext = dbContext;
             this.regionRepository = regionRepository;
             this.mapper = mapper;
+            this.logger = logger;
         }
         //Get All regions
         [HttpGet]
-        [Authorize(Roles = "Reader")]
+        //[Authorize(Roles = "Reader")]
         public async Task<IActionResult> GetAll()
         {
-            //Get data from Database - Domain Models
-            var regionsDomain = await regionRepository.GetAllAsync();
+            try
+            {
+                throw new Exception("This is a custom Exception");
+                //logger.LogInformation("GetAllRegions Action Method Invoke");
 
-            //map Domain models to DTOs
-            //var regionsdto = new List<RegionDto>();
-            //foreach (var regionDomain in regionsDomain)
-            //{
-            //    regionsdto.Add(new RegionDto()
-            //    {
-            //        Id= regionDomain.Id,
-            //        Name= regionDomain.Name,
-            //        Code= regionDomain.Code,
-            //        RegionImageUrl= regionDomain.RegionImageUrl
-            //    });
-            //}
+                //logger.LogWarning("This is a warning log");
 
-            var regionsdto = mapper.Map<List<RegionDto>>(regionsDomain);
+                //logger.LogError("This is a error log");
 
-            //Return DTOs
-            return Ok(regionsdto);
+                //Get data from Database - Domain Models
+                var regionsDomain = await regionRepository.GetAllAsync();
+
+                //map Domain models to DTOs
+                //var regionsdto = new List<RegionDto>();
+                //foreach (var regionDomain in regionsDomain)
+                //{
+                //    regionsdto.Add(new RegionDto()
+                //    {
+                //        Id= regionDomain.Id,
+                //        Name= regionDomain.Name,
+                //        Code= regionDomain.Code,
+                //        RegionImageUrl= regionDomain.RegionImageUrl
+                //    });
+                //}
+                logger.LogInformation($"Finished GetAllRegions request with Data: {JsonSerializer.Serialize(regionsDomain)}");
+
+                var regionsdto = mapper.Map<List<RegionDto>>(regionsDomain);
+
+                //Return DTOs
+                return Ok(regionsdto);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex,ex.Message);
+                throw;
+            }
+            
         }
 
         //Get Single region (get region by Id)
